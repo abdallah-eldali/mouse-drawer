@@ -20,7 +20,7 @@ for index, direction in enumerate(Direction):
     direction_index[direction] = index
 
 visited = set()    #create a set (O(1) for retrievel according to stackoverflow) of already visited pixels
-image = Image.open("test_c.png")
+image = Image.open("muT5j.png")
 image.convert("L")
 width, height = image.size
 print(width, height)
@@ -84,36 +84,54 @@ def follow_wall(previous_node: tuple, coming_from: Direction, current_position: 
     going_to = next_directions(coming_from, current_position)
 
     #base case
-    if not going_to:
-        return
+    while going_to:
+        if not going_straight(coming_from, going_to) and not previous_node == current_position:
+            #create node
+            new_node = current_position
+            #create edges between new_node and previous_node
+            G.add_edge(previous_node, new_node)
+            #set previous_node = new_node
+            previous_node = new_node
 
-    if not going_straight(coming_from, going_to):
-        #create node
-        new_node = current_position
-        #create edges between new_node and previous_node
-        G.add_edge(previous_node, new_node)
-        #set previous_node = new_node
-        previous_node = new_node
+        #set current position as already visited
+        visited.add(current_position)
+        coming_from = opposite_direction(going_to)
+        current_position = go_to(current_position, going_to)
+        going_to = next_directions(coming_from, current_position)
 
-    #set current position as already visited
-    visited.add(current_position)
-    follow_wall(previous_node, opposite_direction(going_to), go_to(current_position, going_to))
 
 found_first_pixel = False
 
 #TODO: Change this to make it so we find other pixels that haven't been visited before
 for y in range(height):
     for x in range(width):
-        if pixel_is_black((x, y)):
-            follow_wall((x, y), Direction.WEST, (x, y))
-            found_first_pixel = True
-            break
-    
-    if found_first_pixel:
-        break
-            
+        pixel = (x, y)
+        if pixel_is_black(pixel) and pixel not in visited:
+            follow_wall(pixel, Direction.WEST, pixel)
 
 p = {v:v for v in G.nodes}
 print(p)
 nx.draw(G, pos=p, with_labels=False, node_size=1, width=0.1)
 plt.show()
+
+
+
+
+"""
+
+while there is a place to go to:
+    going_to = get_direction()
+
+    if going_straight:
+        move to the new pixel
+        mark it as visited
+
+    else:
+        when not going straight
+        create node
+        connect edge node to prev_node
+        set the node as previous node
+
+
+
+"""
