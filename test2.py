@@ -2,6 +2,15 @@ from enum import Enum
 from PIL import Image
 import networkx as nx
 import matplotlib.pyplot as plt
+import mouse
+import time
+
+#TODO:
+# 1. Find a way to quit the events of the mouse
+# 2. Only start when clicking on something
+# 3. Review code + clean
+# 4. Git commit everything needed and .gitignore for the images
+# 5. Figure out Tkinter idea on a different script file
 
 class Direction(Enum):
     NORTH = (0, -1)
@@ -20,7 +29,7 @@ for index, direction in enumerate(Direction):
     direction_index[direction] = index
 
 visited = set()    #create a set (O(1) for retrievel according to stackoverflow) of already visited pixels
-image = Image.open("muT5j.png")
+image = Image.open("result_bw.png")
 image.convert("L")
 width, height = image.size
 print(width, height)
@@ -28,7 +37,7 @@ print(width, height)
 
 def pixel_in_range(pixel_position: tuple) -> bool:
     x, y = pixel_position
-    return (0 < x and x < width) and (0 < y and y < height)
+    return (0 <= x and x < width) and (0 <= y and y < height)
 
 def pixel_is_black(pixel_position: tuple) -> bool:
     return image.getpixel(pixel_position) == 0
@@ -78,9 +87,11 @@ def opposite_direction(direction: Direction) -> Direction:
 
     return directions[opposite_direction_index]
 
-G = nx.Graph()
+G = nx.DiGraph()
 
-def follow_wall(previous_node: tuple, coming_from: Direction, current_position: tuple) -> None:
+def follow_wall(previous_node: tuple, coming_from: Direction, current_position: tuple) -> set:
+    nodes = [previous_node]
+
     going_to = next_directions(coming_from, current_position)
 
     #base case
@@ -88,6 +99,7 @@ def follow_wall(previous_node: tuple, coming_from: Direction, current_position: 
         if not going_straight(coming_from, going_to) and not previous_node == current_position:
             #create node
             new_node = current_position
+            nodes.append(new_node)
             #create edges between new_node and previous_node
             G.add_edge(previous_node, new_node)
             #set previous_node = new_node
@@ -100,19 +112,96 @@ def follow_wall(previous_node: tuple, coming_from: Direction, current_position: 
         going_to = next_directions(coming_from, current_position)
 
 
-found_first_pixel = False
+    G.add_node(current_position)
+    if not previous_node == current_position:
+        #create edges between new_node and previous_node
+        G.add_edge(previous_node, current_position)
+        nodes.append(current_position)
+        visited.add(current_position)
 
-#TODO: Change this to make it so we find other pixels that haven't been visited before
+    return nodes
+
+trees = [] #roots of trees
 for y in range(height):
     for x in range(width):
         pixel = (x, y)
         if pixel_is_black(pixel) and pixel not in visited:
+            trees.append(pixel)
             follow_wall(pixel, Direction.WEST, pixel)
 
+
+
+
 p = {v:v for v in G.nodes}
-print(p)
-nx.draw(G, pos=p, with_labels=False, node_size=1, width=0.1)
+nx.draw(G, pos=p, with_labels=False, node_size=1, width=0.1, arrows=False, arrowsize=1)
 plt.show()
+
+time.sleep(5)
+ox,oy = mouse.get_position()
+mouse_events = []
+for tree_root in trees:
+    nodes = list(nx.nodes(nx.dfs_tree(G, tree_root)))
+
+    x, y = nodes[0]
+
+    mouse.move(ox + x, oy + y)
+    mouse.press()
+
+    for i in range(1, len(nodes)):
+        x, y = nodes[i]
+        time.sleep(0.05)
+        mouse.move(ox + x, oy + y)
+
+    mouse.release()
+    time.sleep(0.05)
+
+
+
+    # root_x, root_y = tree[0]
+
+    # # time.sleep(0.05)
+    # mouse.move(ox + root_x, oy + root_y)
+    # # time.sleep(0.05)
+    # mouse.press()
+    # for i in range(1, len(tree)):
+    #     node_x, node_y = tree[i]
+
+    #     mouse.move(ox + node_x, oy + node_y)
+
+    # # time.sleep(0.05)
+    # mouse.release()
+    
+
+
+    # x, y = root[0]
+    # mouse.move(ox + x, oy + y)
+    # mouse.press()
+    # for i in range(1, len(root)):
+    #     n = root[i]
+    #     x, y = n
+    #     mouse.move(ox + x, oy + y)
+
+    # mouse.release()
+
+    # current_node = root
+    # x, y = current_node
+    # # mouse.move(ox + x, oy + y)
+    # # mouse.press()
+
+    # children = G.successors(current_node)
+    # print(children)
+
+    # for child in children:
+    #     print(child)
+
+    # while children:
+    #     child = children[0]
+
+    #     x, y = child
+    #     # mouse.move(ox + x, oy + y)
+
+    #     current_node = child
+        
 
 
 
