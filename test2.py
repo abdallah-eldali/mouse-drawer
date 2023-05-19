@@ -6,6 +6,9 @@ import time
 from compass import *
 from multiprocessing import Process
 import keyboard
+import pyautogui
+
+pyautogui.FAILSAFE = False
 
 # TODO:
 # 1. Find a way to quit the events of the mouse
@@ -97,24 +100,58 @@ class MouseDraw:
     def __draw_from_bg(self, x: int, y: int) -> None:
         print("DEBUG STARTING TO DRAW")
         for linked_list in self.__linked_lists:
-            # move to the first pixel in the list and keep pressing the left button of the mouse
-            px, py = linked_list[0]
-            mouse.move(x + px, y + py)
-            mouse.drag()
-
-            # iterate over the rest of the pixels and move to those while still pressing
-            for pixel in linked_list[1:]:
-                # NOTE: This is checked to stop the drawing, multiprocessing seems to have too much overhead
+            # from 0..N-1
+            for i in range(len(linked_list) - 1):
                 if keyboard.is_pressed('esc'):
                     print("Stop drawing")
                     return
-                px, py = pixel
-                time.sleep(0.025)    # this is needed since if the mouse goes too fast, the drawing won't work
-                mouse.move(x + px, y + py)
+
+                start_x, start_y = linked_list[i]
+                end_x, end_y = linked_list[i+1]
+
+                mouse.drag(start_x + x, start_y + y, end_x + x, end_y + y)
+                time.sleep(0.00001)
+
+
+
+            """            
+            first_pixel_x, first_pixel_y = linked_list[0]
+            start_x, start_y = x + first_pixel_x, y + first_pixel_y
+            print(start_x, start_y)
+
+            # from 1 ... N
+            for pixel in linked_list[1:]:
+                if keyboard.is_pressed('esc'):
+                    print("Stop drawing")
+                    return
+                end_x, end_y = pixel
+                print(end_x, end_y)
+                mouse.drag(start_x, start_y, end_x, end_y)
+                start_x, start_y = end_x, end_y
+                break
+            break
+            
+            """
+
+
+
+            # move to the first pixel in the list and keep pressing the left button of the mouse
+            # px, py = linked_list[0]
+            # mouse.move(x + px, y + py)
+
+            # iterate over the rest of the pixels and move to those while still pressing
+            # for pixel in linked_list[1:]:
+            #     # NOTE: This is checked to stop the drawing, multiprocessing seems to have too much overhead
+            #     if keyboard.is_pressed('esc'):
+            #         print("Stop drawing")
+            #         return
+            #     px, py = pixel
+            #     time.sleep(0.025)    # this is needed since if the mouse goes too fast, the drawing won't work
+            #     mouse.move(x + px, y + py)
 
             # release the mouse pressing and sleep
-            mouse.release()
-            time.sleep(0.025)
+            # mouse.release()
+            # time.sleep(0.025)
 
     @staticmethod
     def __stop_drawing():

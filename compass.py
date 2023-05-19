@@ -5,7 +5,7 @@ NOTE: This class doesn't contain all the methods that the data structure support
 """
 import typing
 # Generics
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Iterator
 
 T = TypeVar('T')
 
@@ -35,7 +35,11 @@ class CircularArray(Generic[T]):
 
 
 from enum import Enum
-from itertools import cycle, islice, dropwhile
+from itertools import cycle, islice
+
+
+# NOTE: Maybe it was better (and probably more efficient) to create my own circular array
+#      instead of having to rely on cycle iterators
 
 
 class Direction(Enum):
@@ -57,17 +61,23 @@ for index, direction in enumerate(Direction):
     cardinal_directions.append(direction)
     direction_index[direction] = index
 
-cardinal_directions = cycle(cardinal_directions)
 
-
-def get_cardinal_points_from(direction: Direction) -> Iterator[Direction]:
-    start_index = direction_index[direction]
+def get_cardinal_points_from(cardinal_direction: Direction) -> Iterator[Direction]:
+    start_index = direction_index[cardinal_direction]
     end_index = start_index + len(Direction)
 
-    return islice(cardinal_directions, start_index, end_index)
+    # TODO: Check time complexity for this, it might be faster if I implement it a different way
+    return islice(cycle(cardinal_directions), start_index, end_index)
 
 
-# Testing
+def opposite_direction(a: Direction) -> Direction:
+    i_a = direction_index[a]
 
-for i in get_cardinal_points_from(Direction.WEST):
-    print(i)
+    # doing a 180 on the index of direction a, and seeing if it matched with direction b's index
+    i_b = int((i_a + len(cardinal_directions) / 2) % len(cardinal_directions))
+
+    return cardinal_directions[i_b]
+
+
+def are_opposite(a: Direction, b: Direction) -> bool:
+    return opposite_direction(a) == b
